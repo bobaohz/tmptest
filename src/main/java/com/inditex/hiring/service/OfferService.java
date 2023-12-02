@@ -1,0 +1,51 @@
+package com.inditex.hiring.service;
+
+import com.inditex.hiring.controller.dto.Offer;
+import com.inditex.hiring.controller.dto.OfferByPartNumber;
+import com.inditex.hiring.controller.exception.OfferNotFoundException;
+import com.inditex.hiring.repository.OfferRepository;
+import com.inditex.hiring.service.helper.PriceHelper;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class OfferService {
+
+    private final OfferRepository offerRepository;
+
+    public OfferService(OfferRepository offerRepository) {
+        this.offerRepository = offerRepository;
+    }
+
+    public Offer createNewOffer(Offer offer) {
+        return offerRepository.save(offer);
+    }
+
+    public List<Offer> getAllOffers() {
+        return offerRepository.findAll();
+    }
+
+    public Offer getOffersById(Long id) {
+        return offerRepository.findById(id).orElseThrow(() -> new OfferNotFoundException(id));
+    }
+
+    public void deleteOfferById(Long id) {
+        offerRepository.deleteById(id);
+    }
+
+    public void deleteAllOffers() {
+        offerRepository.deleteAll();
+    }
+
+    public List<OfferByPartNumber> findByBrandIdAndPartNumber(Integer brandId, String productPartNumber) {
+        List<Offer> offers = offerRepository.findByBrandIdAndProductPartnumber(brandId, productPartNumber);
+        if (offers == null || offers.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return new PriceHelper().generateTimeTable(offers);
+    }
+
+}
