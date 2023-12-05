@@ -5,11 +5,13 @@ import com.inditex.hiring.controller.dto.OfferByPartNumber;
 import com.inditex.hiring.controller.exception.OfferNotFoundException;
 import com.inditex.hiring.repository.OfferRepository;
 import com.inditex.hiring.service.helper.PriceHelper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class OfferService {
@@ -26,6 +28,10 @@ public class OfferService {
 
     public List<Offer> getAllOffers() {
         return offerRepository.findAll();
+    }
+
+    public Long count() {
+        return offerRepository.count();
     }
 
     public Offer getOffersById(Long id) {
@@ -48,4 +54,9 @@ public class OfferService {
         return new PriceHelper().generateTimeTable(offers);
     }
 
+    public List<Offer> getTopNOffer(int topN) {
+        Pageable pageable = PageRequest.of(0, topN);
+        Page<Offer> topNOffers = offerRepository.findAll(pageable);
+        return topNOffers.getContent();
+    }
 }

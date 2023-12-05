@@ -16,6 +16,10 @@ public class OfferByPartNumber implements Serializable {
 
   private String currencyIso;
 
+  public OfferByPartNumber() {
+
+  }
+
   public OfferByPartNumber(String startDate, String endDate, BigDecimal price, String currencyIso) {
 
     this.startDate = startDate;

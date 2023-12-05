@@ -4,7 +4,6 @@ import com.inditex.hiring.controller.dto.Offer;
 import com.inditex.hiring.controller.dto.OfferByPartNumber;
 import com.inditex.hiring.utils.DateUtil;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 
 /**

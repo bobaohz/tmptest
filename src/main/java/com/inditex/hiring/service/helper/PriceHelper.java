@@ -20,6 +20,7 @@ public class PriceHelper {
             return new ArrayList<>();
         }
 
+        //one offer case
         if (offerList.size() == 1) {
             return offerList.stream().map(offer ->
                     new OfferByPartNumber(offer.getStartDate(), offer.getEndDate(), offer.getPrice(), offer.getCurrencyIso())).collect(Collectors.toList());
@@ -28,22 +29,26 @@ public class PriceHelper {
         //to handle cases with time overlap
         List<Instant> allDateList = new ArrayList<>();
 
+        //get all dates from start_date and end_date
         offerList.stream().forEach(offer -> {
             allDateList.add(Instant.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(offer.getStartDate()))));
             allDateList.add(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(offer.getEndDate())));
         });
 
-
-        //sort the date
+        //sort the dates
         allDateList.sort(Comparator.comparing(Instant::toEpochMilli));
 
         //get the period list (start_date, end_date)
         List<PricingPeriod> periods = splitIntoPeriods(allDateList);
 
+        //for each period, to apply right price plan based on time window and priority
         periods.stream().forEach(period -> setApplicableOffer(period, offerList));
 
+        //for some case, may need to merge some neighbouring periods with same price
         List<PricingPeriod> mergedPeriods = mergePeriodsWithSamePrice(periods);
-        return mergedPeriods.stream().map(pricingPeriod-> pricingPeriod.toOfferByPartNumber()).collect(Collectors.toList());
+
+        //convert to OfferByPartNumber
+        return mergedPeriods.stream().map(PricingPeriod::toOfferByPartNumber).collect(Collectors.toList());
     }
 
     private List<PricingPeriod> mergePeriodsWithSamePrice(List<PricingPeriod> periods) {
@@ -69,6 +74,12 @@ public class PriceHelper {
         return Math.abs(price1.doubleValue() - price2.doubleValue()) < 1e-3;
     }
 
+    /**
+     * if any offers are applicable for current period.
+     * In case multiple offers are applicable, pickup the one with highest priority
+     * @param period
+     * @param offerList
+     */
     private void setApplicableOffer(PricingPeriod period, List<Offer> offerList) {
         offerList.stream().forEach(currentOffer -> {
             Offer appliedOffer = period.getAppliedOffer();

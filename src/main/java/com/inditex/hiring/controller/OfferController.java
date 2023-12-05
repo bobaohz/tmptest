@@ -5,6 +5,7 @@ import com.inditex.hiring.controller.dto.OfferByPartNumber;
 import com.inditex.hiring.controller.exception.OfferNotFoundException;
 import com.inditex.hiring.service.OfferService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,11 @@ import java.util.List;
 @RestController
 public class OfferController {
 
-  private OfferService offerService;
+  //thinking of performance: max records could be returned in getAllOffers api
+  @Value("${pricing.service.config.maxRecordsPerPage:1000}")
+  private int maxRecordsInOneRequest;
+
+  private final OfferService offerService;
 
   public OfferController(OfferService offerService) {
     this.offerService = offerService;
@@ -37,30 +42,42 @@ public class OfferController {
 
   @RequestMapping(value = "/offer/{id}", method = RequestMethod.DELETE)
   @ResponseStatus(HttpStatus.OK)
-  public ResponseEntity deleteOfferById(@PathVariable Long id) {
+  public ResponseEntity<HttpStatus> deleteOfferById(@PathVariable Long id) {
 
     //to check if the offer with given id exist?
-    Offer offer = offerService.getOffersById(id);
-    if (offer == null) {
+    try {
+      offerService.getOffersById(id);
+    } catch (OfferNotFoundException e) {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    } else {
-      offerService.deleteOfferById(id);
-      return ResponseEntity.ok().build();
     }
+
+    offerService.deleteOfferById(id);
+    return ResponseEntity.ok().build();
   }
 
 
   @RequestMapping(value = "/offer", method = RequestMethod.GET)
   @ResponseStatus(HttpStatus.OK)
   public List<Offer> getAllOffers() {
-    return offerService.getAllOffers();
+    Long countOfOffers = offerService.count();
+    if (countOfOffers <= maxRecordsInOneRequest) {
+      return offerService.getAllOffers();
+    }
+
+    return offerService.getTopNOffer(maxRecordsInOneRequest);
   }
 
   @RequestMapping(value = "/offer/{id}", method = RequestMethod.GET)
   @ResponseStatus(HttpStatus.OK)
   @ExceptionHandler(OfferNotFoundException.class)
-  public Offer getOfferById(@PathVariable Long id) {
-    return offerService.getOffersById(id);
+  public ResponseEntity<Offer> getOfferById(@PathVariable Long id) {
+
+    try {
+      Offer offer = offerService.getOffersById(id);
+      return new ResponseEntity<>(offer, HttpStatus.OK);
+    } catch (OfferNotFoundException e) {
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
   }
 
   @RequestMapping(value = "brand/{brandId}/partnumber/{partnumber}/offer", method = RequestMethod.GET)
